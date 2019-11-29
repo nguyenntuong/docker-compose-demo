@@ -1,23 +1,54 @@
 version: "3"
 services: 
+  aspnetcore-service:
+    build: ./services/aspnetcore-service
+    ports: 
+      - 80:80
+    depends_on: 
+      - account-service
+      - stock-service
+    networks: 
+      - frontend
+      - backend    
   account-service:
     build: ./services/account-service
     volumes:
       - ./services/account-service:/usr/src/app
-    ports: 
-      - 50000:80
+    expose: 
+      - 80
+    networks: 
+      - backend
   phpweb-service:
     build: ./services/phpweb-service
     volumes: 
       - ./services/phpweb-service:/var/www/html
     ports:
-      - 80:80
+      - 8080:80
     depends_on: 
       - account-service
       - stock-service
+    networks: 
+      - backend
+      - frontend
   stock-service:
     build: ./services/stock-service
     volumes:
       - ./services/stock-service:/usr/src/app
-    ports:
-      - 50003:80
+    expose: 
+      - 80
+    networks: 
+      - frontend      
+    deploy:
+      mode: replicated
+      replicas: 6
+      update_config:
+        parallelism: 2
+        delay: 5s
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 4
+        window: 30s
+networks: 
+  backend:
+  frontend:
